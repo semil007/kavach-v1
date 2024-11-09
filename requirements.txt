@@ -12,3 +12,4 @@ sentence-transformers==3.0.1
 langchain_huggingface
 easyocr
 streamlit-authenticator
+python-dotenv
