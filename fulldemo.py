@@ -35,6 +35,22 @@ def authenticate(username, password):
         return True
     return False
 
+bg_img="""
+
+<style>
+[data-testid="stMain"] {
+background-image: url("https://www.railway-technology.com/wp-content/uploads/sites/13/2018/06/indianrailways.jpg");
+background-size: cover}
+
+[data-testid="stHeader"] {
+background-color: rgba(0, 0, 0, 0);
+}
+</style>
+
+"""
+
+st.markdown(bg_img, unsafe_allow_html=True)
+
 # Streamlit app layout
 st.title("Kavach Guidelines Chatbot")
 
