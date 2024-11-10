@@ -3,8 +3,8 @@ python-dotenv
 PyPDF2
 Pillow
 pymupdf
-langchain
-langchain-community  # For additional LangChain community resources
+langchain==0.3.7
+langchain-community==0.3.5
 faiss-cpu
 transformers
 torch
