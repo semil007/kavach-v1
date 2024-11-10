@@ -11,4 +11,4 @@ torch
 easyocr
 numpy
 scikit-learn
-google-generative-ai
+google-generativeai==0.8.3
