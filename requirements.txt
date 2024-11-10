@@ -11,4 +11,4 @@ torch==1.12.1 -f https://download.pytorch.org/whl/cpu
 easyocr==1.7.0
 numpy==1.24.2
 scikit-learn==1.2.2
-google-generative-ai==0.1.0
+google-generativeai==0.8.3
