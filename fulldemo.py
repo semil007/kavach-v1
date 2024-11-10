@@ -37,57 +37,52 @@ def authenticate(username, password):
 
 # Streamlit app layout
 st.title("Kavach Guidelines Chatbot")
-bg_img="""
- 
+
+# Background and style
+bg_img = """
 <style>
 [data-testid="stMain"] {
 background-image: url("https://www.railway-technology.com/wp-content/uploads/sites/13/2018/06/indianrailways.jpg");
-background-size: cover}
- 
+background-size: cover;
+}
+
 [data-testid="stHeader"] {
 background-color: rgba(0, 0, 0, 0);
 }
-</style>
- 
-"""
- 
-st.markdown(bg_img, unsafe_allow_html=True)
- 
-# Authentication function
-def authenticate(username, password):
-    if username in users and users[username]['password'] == hash_password(password):
-        return True
-    return False
- 
- 
- 
-bg_img="""
- 
-<style>
-[data-testid="stMain"] {
-background-image: url("https://www.railway-technology.com/wp-content/uploads/sites/13/2018/06/indianrailways.jpg");
-background-size: cover}
- 
-[data-testid="stHeader"] {
-background-color: rgba(0, 0, 0, 0);
+
+.chat-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.9);
+    margin-top: 20px;
+}
+
+.chat-message {
+    background-color: white;
+    padding: 8px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-between;
 }
 </style>
- 
 """
- 
 st.markdown(bg_img, unsafe_allow_html=True)
- 
- 
-# Streamlit app layout
-st.title("Kavach Guidelines Chatbot")
- 
- 
 
 # Initialize session state
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
 
-# ------------ Authentication Page ------------
+# Authentication Page
 def authentication_page():
     st.subheader("Login to Access Chatbot")
     username = st.text_input('Username')
@@ -97,23 +92,19 @@ def authentication_page():
         if authenticate(username, password):
             st.session_state.logged_in = True
             st.success(f"Welcome {users[username]['name']}! Redirecting to chatbot...")
-
         else:
             st.error('Invalid username or password. Please try again.')
 
-# ------------ Chatbot Page ------------
+# Chatbot Page
 def chatbot_page():
     if not st.session_state.logged_in:
         authentication_page()
         return
     
     st.subheader("Welcome to the Chatbot!")
-
-    # Initialize chat history and OCR reader
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
+    
+    # Initialize OCR reader and load PDF
     reader = easyocr.Reader(['en'])
-
     pdf_path = "Annexure-B.pdf"  # Ensure this file exists in the same directory
 
     # OCR helper function
@@ -131,16 +122,11 @@ def chatbot_page():
 
     kavach_text = load_pdf()
 
-    # Text splitter
-    chunk_size = 1000
-    chunk_overlap = 100
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-
-    # Chunk creation
+    # Text splitter and chunk creation
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     @st.cache_resource
     def create_chunks(kavach_text):
         return [{'text': chunk, 'source': 'kavach_source'} for chunk in text_splitter.split_text(kavach_text)]
-
     kavach_chunks = create_chunks(kavach_text)
 
     # FAISS Vector Store
@@ -152,7 +138,6 @@ def chatbot_page():
             embedding=embeddings,
             metadatas=[{'source': chunk['source']} for chunk in kavach_chunks]
         )
-
     vectorstore = create_vector_store(kavach_chunks)
 
     # Configure Google Gemini Pro API
@@ -163,6 +148,7 @@ def chatbot_page():
         st.error("API Key not found. Ensure 'MY_API_KEY' is set in environment variables.")
         return
 
+    # Query handling functions
     def generate_kavach_response(prompt):
         model = genai.GenerativeModel('gemini-1.5-pro-002')
         response = model.generate_content(prompt)
@@ -179,42 +165,29 @@ def chatbot_page():
         prompt = f"Based on the following Kavach guidelines:\n\n{combined_text}\n\nAnswer the query: {query}"
         return generate_kavach_response(prompt)
 
-    # Query input
+    # Input and chat display
     user_query = st.text_input("Enter your query about Kavach guidelines")
-
-    if st.button("Submit Query"):
-        if user_query:
-            decision = get_kavach_decision(user_query)
-            st.session_state.chat_history.append({"user": user_query, "bot": decision})
-            st.header("Chat History")
-            for chat in st.session_state.chat_history:
-                st.write(f"**You**: {chat['user']}")
-                st.write(f"**Bot**: {chat['bot']}")
-
-            if "image" in user_query.lower() or "illustration" in user_query.lower():
-                pdf_document = fitz.open(pdf_path)
-                images = []
-                for page_num in range(pdf_document.page_count):
-                    page = pdf_document.load_page(page_num)
-                    for img in page.get_images(full=True):
-                        xref = img[0]
-                        base_image = pdf_document.extract_image(xref)
-                        image = Image.open(BytesIO(base_image["image"]))
-                        if not contains_text_using_easyocr(image):
-                            images.append(image)
-
-                if images:
-                    st.header("Extracted Kavach-related Images")
-                    num_columns = 3
-                    cols = st.columns(num_columns)
-                    for i, image in enumerate(images):
-                        resized_image = image.resize((300, 300), Image.LANCZOS)
-                        cols[i % num_columns].image(resized_image, caption=f"Image {i + 1}", use_container_width=True)
-                else:
-                    st.write("No Kavach-related images found in the document.")
-        else:
-            st.warning("Please enter a query.")
     
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        submit = st.button("Submit Query")
+    with col2:
+        clear_chat = st.button("Clear Chat History")
+
+    if submit and user_query:
+        decision = get_kavach_decision(user_query)
+        st.session_state.chat_history.append({"user": user_query, "bot": decision})
+
+    if clear_chat:
+        st.session_state.chat_history = []
+
+    # Display chat history in a scrollable container
+    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+    for chat in st.session_state.chat_history:
+        st.write(f"**You**: {chat['user']}")
+        st.markdown(f"<div class='chat-message'><strong>Bot</strong>: {chat['bot']}</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
 # Display the appropriate page
 if st.session_state.logged_in:
     chatbot_page()
