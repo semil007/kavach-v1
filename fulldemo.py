@@ -42,7 +42,7 @@ def authenticate(username, password):
 bg_img = """
 <style>
 [data-testid="stMain"] {
-    background-image: url("sample-11.jpg");
+    background-image: url("https://live.staticflickr.com/65535/53189208896_83b838ad17_k.jpg");
     background-size: cover;
 }
 [data-testid="stHeader"] {
