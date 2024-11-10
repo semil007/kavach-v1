@@ -29,61 +29,33 @@ users = {
     }
 }
 
-# Authentication function
+# Authentication function with improved password handling
 def authenticate(username, password):
-    if username in users and users[username]['password'] == hash_password(password):
-        return True
+    """Authenticate a user by comparing the hashed password with stored hash."""
+    if username in users:
+        stored_password_hash = users[username]['password']
+        # Hash the provided password to compare with stored hash
+        if stored_password_hash == hash_password(password):
+            return True
     return False
 
-bg_img="""
-
-<style>
-[data-testid="stMain"] {
-    background-image: url("https://www.railway-technology.com/wp-content/uploads/sites/13/2018/06/indianrailways.jpg");
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-}
-
-[data-testid="stMainBlockContainer"] {
-    background-color: rgba(255, 255, 255, 0.8);  
-    padding: 20px;
-    border-radius: 10px;
-    max-width: 600px;
-    width: 100%;
-    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);  
-}
-
-[data-testid="stHeader"] {
-    background-color: rgba(0, 0, 0, 0);
-}
-</style>
-
-"""
-
-st.markdown(bg_img, unsafe_allow_html=True)
-
-# Streamlit app layout
-st.title("Kavach Guidelines Chatbot")
-
-# Initialize session state
+# Initialize session state for login
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
 # ------------ Authentication Page ------------
 def authentication_page():
     st.subheader("Login to Access Chatbot")
+    
+    # Capture user input for credentials
     username = st.text_input('Username')
     password = st.text_input('Password', type='password')
 
+    # Login button with authentication check
     if st.button('Login'):
         if authenticate(username, password):
             st.session_state.logged_in = True
             st.success(f"Welcome {users[username]['name']}! Redirecting to chatbot...")
-
         else:
             st.error('Invalid username or password. Please try again.')
 
