@@ -12,7 +12,6 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import easyocr  # For OCR-based text extraction
 import numpy as np  # For array conversion
-import base64
 
 # Load environment variables from .env file (for local development)
 load_dotenv()
@@ -30,76 +29,84 @@ users = {
     }
 }
 
-# Authentication function with improved password handling
+# Authentication function
 def authenticate(username, password):
-    """Authenticate a user by comparing the hashed password with stored hash."""
-    if username in users:
-        stored_password_hash = users[username]['password']
-        # Hash the provided password to compare with stored hash
-        if stored_password_hash == hash_password(password):
-            return True
+    if username in users and users[username]['password'] == hash_password(password):
+        return True
     return False
+
+# Streamlit app layout
+st.title("Kavach Guidelines Chatbot")
+bg_img="""
+ 
+<style>
+[data-testid="stMain"] {
+background-image: url("https://www.railway-technology.com/wp-content/uploads/sites/13/2018/06/indianrailways.jpg");
+background-size: cover}
+ 
+[data-testid="stHeader"] {
+background-color: rgba(0, 0, 0, 0);
+}
+</style>
+ 
+"""
+ 
+st.markdown(bg_img, unsafe_allow_html=True)
+ 
+# Authentication function
+def authenticate(username, password):
+    if username in users and users[username]['password'] == hash_password(password):
+        return True
+    return False
+ 
+ 
+ 
+bg_img="""
+ 
+<style>
+[data-testid="stMain"] {
+background-image: url("https://www.railway-technology.com/wp-content/uploads/sites/13/2018/06/indianrailways.jpg");
+background-size: cover}
+ 
+[data-testid="stHeader"] {
+background-color: rgba(0, 0, 0, 0);
+}
+</style>
+ 
+"""
+ 
+st.markdown(bg_img, unsafe_allow_html=True)
+ 
+ 
+# Streamlit app layout
+st.title("Kavach Guidelines Chatbot")
+ 
+ 
 
 # Initialize session state
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-# Function to encode local image as base64 for HTML embedding
-def encode_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
-
-# Paths to local images
-bg_img_path = "images/sample-11.jpg"  # Replace with your actual background image path
-logo_img_path = "images/logo.jpg.png"  # Replace with your actual logo image path
-
-# Embed CSS and background image
-bg_img = f"""
-<style>
-[data-testid="stMain"] {{
-    background-image: url("data:image/jpg;base64,{encode_image(bg_img_path)}");
-    background-size: cover;
-}}
-[data-testid="stHeader"] {{
-    background-color: rgba(0, 0, 0, 0);
-}}
-</style>
-"""
-st.markdown(bg_img, unsafe_allow_html=True)
-
 # ------------ Authentication Page ------------
 def authentication_page():
-    st.markdown(f"""
-    <link rel="stylesheet" href="styles.css">
-    <div class="login-container">
-        <h2>Welcome Back</h2>
-        <img src="data:image/png;base64,{encode_image(logo_img_path)}" alt="Logo" class="logo">
-        <p class="login-subheading">Please enter your credentials to access your account</p>
-        <form id="login-form">
-          <input id="username" type="text" placeholder="Username" required>
-          <input id="password" type="password" placeholder="Password" required>
-          <button id="login-button" type="button">Login</button>
-        </form>
-    </div>
-    <script>
-    document.getElementById("login-button").onclick = function() {{
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
-        if (username === "{users['admin']['email']}" && password === "Kavach2024") {{
-            window.location.reload();
-        }} else {{
-            alert("Invalid username or password. Please try again.");
-        }}
-    }};
-    </script>
-    """, unsafe_allow_html=True)
+    st.subheader("Login to Access Chatbot")
+    username = st.text_input('Username')
+    password = st.text_input('Password', type='password')
+
+    if st.button('Login'):
+        if authenticate(username, password):
+            st.session_state.logged_in = True
+            st.success(f"Welcome {users[username]['name']}! Redirecting to chatbot...")
+
+        else:
+            st.error('Invalid username or password. Please try again.')
 
 # ------------ Chatbot Page ------------
 def chatbot_page():
     if not st.session_state.logged_in:
         authentication_page()
         return
-
+    
     st.subheader("Welcome to the Chatbot!")
 
     # Initialize chat history and OCR reader
@@ -213,4 +220,3 @@ if st.session_state.logged_in:
     chatbot_page()
 else:
     authentication_page()
-#The end page ofstreamlit
