@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kavach IndianRailways</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="LoginPage.css">
+</head>
+<body>
+
+  <div class="login-page">
+    <header class="header">
+      <div class="brand-name">KAVACH CHATBOT</div>
+      <span class="powered-by">Powered By</span>
+      <img src="images/logo.jpg.png" alt="Logo" class="logo">
+    </header>
+
+    <div class="background-image" style="background-image: url('images/sample-11.jpg');">
+      <div class="login-box">
+        <h2>Welcome Back</h2>
+        <p class="login-subheading">Please enter your credentials to access your account</p>
+
+        <form id="login-form">
+          <div class="textbox">
+            <i class="fas fa-user" aria-hidden="true" style="color: black; left: 13px; top: 17px;"></i>
+            <input type="text" id="username" placeholder="Username" required>
+          </div>
+
+          <div class="textbox">
+            <i class="fas fa-lock" aria-hidden="true" style="color: black; left: 13px; top: 17px;"></i>
+            <input type="password" id="password" placeholder="Password" required class="password-input">
+            <i class="fas fa-eye-slash password-eye-icon" onclick="togglePasswordVisibility()"></i>
+          </div>
+
+          <div class="remember-me">
+            <input type="checkbox" id="remember-me">
+            <label for="remember-me">Remember Me</label>
+          </div>
+
+          <button type="submit" class="btn">Login</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle password visibility
+    let showPassword = false;
+    function togglePasswordVisibility() {
+      showPassword = !showPassword;
+      const passwordInput = document.getElementById('password');
+      const eyeIcon = document.querySelector('.password-eye-icon');
+      if (showPassword) {
+        passwordInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+      } else {
+        passwordInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+      }
+    }
+
+    // Handle login form submission
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    console.log('Login attempted with the following details:');
+    console.log(`Username: ${username}`);
+    console.log(`Password: ${password}`);
+
+    // Validate the username and password
+    if (username === 'admin' && password === 'Kavach2024') {
+      console.log('Login successful!');
+      // Redirect immediately to the home page
+      window.location.href = '/home'; // Change this to your actual target URL/path
+    } else {
+      console.log('Invalid credentials entered!');
+      // You can also redirect on failure, or show a message in some other way.
+      // window.location.href = '/login'; // If you want to redirect back to login page on failure.
+    }
+    });
+  </script>
+
+</body>
+</html>
