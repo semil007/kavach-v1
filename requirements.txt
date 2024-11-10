@@ -7,7 +7,7 @@ langchain==0.0.208
 langchain-community==0.0.13
 faiss-cpu==1.7.3
 transformers==4.30.2
-torch==1.12.1+cpu -f https://download.pytorch.org/whl/cpu.html
+torch==1.12.1 -f https://download.pytorch.org/whl/cpu
 easyocr==1.7.0
 numpy==1.24.2
 scikit-learn==1.2.2
