@@ -30,10 +30,14 @@ users = {
     }
 }
 
-# Authentication function
+# Authentication function with improved password handling
 def authenticate(username, password):
-    if username in users and users[username]['password'] == hash_password(password):
-        return True
+    """Authenticate a user by comparing the hashed password with stored hash."""
+    if username in users:
+        stored_password_hash = users[username]['password']
+        # Hash the provided password to compare with stored hash
+        if stored_password_hash == hash_password(password):
+            return True
     return False
 
 # Initialize session state
