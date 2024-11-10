@@ -39,11 +39,26 @@ bg_img="""
 
 <style>
 [data-testid="stMain"] {
-background-image: url("https://www.railway-technology.com/wp-content/uploads/sites/13/2018/06/indianrailways.jpg");
-background-size: cover}
+    background-image: url("https://www.railway-technology.com/wp-content/uploads/sites/13/2018/06/indianrailways.jpg");
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+[data-testid="stMainBlockContainer"] {
+    background-color: rgba(255, 255, 255, 0.8);  
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);  
+}
 
 [data-testid="stHeader"] {
-background-color: rgba(0, 0, 0, 0);
+    background-color: rgba(0, 0, 0, 0);
 }
 </style>
 
