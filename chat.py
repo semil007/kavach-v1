@@ -12,9 +12,7 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import easyocr  # For OCR-based text extraction
 import numpy as np  # For array conversion
-from sklearn.metrics.pairwise import cosine_similarity
-import torch
-from transformers import CLIPProcessor, CLIPModel
+import requests  # To download image from URL
 
 # Load environment variables from .env file (for local development)
 load_dotenv()
@@ -38,20 +36,15 @@ def authenticate(username, password):
         return True
     return False
 
-# Background image styling
-bg_img = """
-<style>
-[data-testid="stMain"] {
-    background-image: url("https://skavachbotstorage.blob.core.windows.net/images/sample-11.jpg?sp=r&st=2024-11-11T04:52:41Z&se=2025-11-11T12:52:41Z&spr=https&sv=2022-11-02&sr=b&sig=4WLFvPbpbrNFVbvelAJ49SdCkrlTA1VrfeUEd6hBaiE%3D");
-    background-size: cover;
-}
-[data-testid="stHeader"] {
-    background-color: rgba(0, 0, 0, 0);
-}
-</style>
-"""
+# Dynamically load and set background image from URL
+def set_background_image_from_url():
+    image_url = "https://skavachbotstorage.blob.core.windows.net/images/sample-11.jpg?sp=r&st=2024-11-11T04:52:41Z&se=2025-11-11T12:52:41Z&spr=https&sv=2022-11-02&sr=b&sig=4WLFvPbpbrNFVbvelAJ49SdCkrlTA1VrfeUEd6hBaiE%3D"
+    response = requests.get(image_url)
+    if response.status_code == 200:
+        img = Image.open(BytesIO(response.content))
+        st.image(img, use_column_width=True)  # Display as a full-width background
 
-st.markdown(bg_img, unsafe_allow_html=True)
+set_background_image_from_url()
 
 # Streamlit app layout
 st.title("Kavach Guidelines Chatbot")
@@ -66,10 +59,10 @@ def authentication_page():
     username = st.text_input('Username')
     password = st.text_input('Password', type='password')
 
-    # Single-click login logic
     if st.button('Login'):
         if authenticate(username, password):
             st.session_state.logged_in = True
+            st.success(f"Welcome {users[username]['name']}! Redirecting to chatbot...")
         else:
             st.error('Invalid username or password. Please try again.')
 
@@ -78,13 +71,7 @@ def chatbot_page():
     if not st.session_state.logged_in:
         authentication_page()
         return
-
-    # Show welcome message after login
-    st.markdown(
-        "<p style='color: white; font-weight: bold;'>Welcome! You are now logged in and can access the chatbot.</p>",
-        unsafe_allow_html=True,
-    )
-
+   
     st.subheader("Welcome to the Chatbot!")
 
     # Initialize chat history and OCR reader
@@ -92,7 +79,7 @@ def chatbot_page():
         st.session_state.chat_history = []
     reader = easyocr.Reader(['en'])
 
-    pdf_path = "Annexure-B.pdf"  # Ensure this file exists in the same directory
+    pdf_path = r"D:\final-v1-chatbot\kavach-v1\Annexure-B.pdf"  # Ensure this file exists in the same directory
 
     # OCR helper function
     def contains_text_using_easyocr(image):
@@ -150,42 +137,12 @@ def chatbot_page():
         retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
         relevant_docs = retriever.get_relevant_documents(query)
         combined_text = "\n".join([doc.page_content for doc in relevant_docs])
-
+       
         if not combined_text.strip():
             return "No relevant information found based on your query."
-
+       
         prompt = f"Based on the following Kavach guidelines:\n\n{combined_text}\n\nAnswer the query: {query}"
         return generate_kavach_response(prompt)
-
-    # Load CLIP model and processor from transformers
-    @st.cache_resource
-    def load_clip_model():
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
-        processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-        return model, processor, device
-
-    model_clip, processor_clip, device_clip = load_clip_model()
-
-    # Image similarity function using CLIP
-    def find_relevant_images(query_text, images, threshold=0.22):
-        # Compute query embedding
-        inputs = processor_clip(text=[query_text], return_tensors="pt", padding=True).to(device_clip)
-        with torch.no_grad():
-            text_embedding = model_clip.get_text_features(**inputs).cpu().numpy()
-
-        # Compute image embeddings
-        image_embeddings = []
-        for image in images:
-            image_input = processor_clip(images=image, return_tensors="pt").to(device_clip)
-            with torch.no_grad():
-                image_embedding = model_clip.get_image_features(**image_input).cpu().numpy()
-            image_embeddings.append(image_embedding[0])
-
-        # Compute similarities
-        similarity_scores = cosine_similarity(text_embedding, image_embeddings)[0]
-        relevant_images = [(i, score) for i, score in enumerate(similarity_scores) if score >= threshold]
-        return sorted(relevant_images, key=lambda x: x[1], reverse=True)
 
     # Query input
     if user_query := st.chat_input("Ask a question about Kavach guidelines"):
@@ -196,7 +153,7 @@ def chatbot_page():
         decision = get_kavach_decision(user_query)
         st.session_state.chat_history.append({"role": "assistant", "content": decision})
 
-        # Check for images based on similarity
+        # Check for any images if query mentions "image" or "illustration"
         if "image" in user_query.lower() or "illustration" in user_query.lower():
             pdf_document = fitz.open(pdf_path)
             images = []
@@ -205,28 +162,19 @@ def chatbot_page():
                 for img in page.get_images(full=True):
                     xref = img[0]
                     base_image = pdf_document.extract_image(xref)
-                    image_bytes = base_image["image"]
-                    image_ext = base_image["ext"]
-                    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+                    image = Image.open(BytesIO(base_image["image"]))
                     if not contains_text_using_easyocr(image):
                         images.append(image)
 
+            # Display extracted images in a chat-style message if any are found
             if images:
-                relevant_images = find_relevant_images(user_query, images, threshold=0.22)
-
-                if relevant_images:
-                    # Display relevant images in a chat-style message
-                    with st.chat_message("assistant"):
-                        st.write("Relevant Kavach-related Images:")
-                        num_columns = 3
-                        cols = st.columns(num_columns)
-                        for idx, (image_idx, score) in enumerate(relevant_images):
-                            resized_image = images[image_idx].resize((250, 250), Image.LANCZOS)
-                            caption = f"Similarity: {score:.2f}"
-                            cols[idx % num_columns].image(resized_image, caption=caption, use_column_width=True)
-                else:
-                    with st.chat_message("assistant"):
-                        st.write("No relevant images found based on your query.")
+                with st.chat_message("assistant"):
+                    st.header("Extracted Kavach-related Images")
+                    num_columns = 3
+                    cols = st.columns(num_columns)
+                    for i, image in enumerate(images):
+                        resized_image = image.resize((300, 300), Image.LANCZOS)
+                        cols[i % num_columns].image(resized_image, caption=f"Image {i + 1}", use_container_width=True)
             else:
                 with st.chat_message("assistant"):
                     st.write("No Kavach-related images found in the document.")
