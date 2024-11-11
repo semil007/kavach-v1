@@ -1,6 +1,6 @@
 sentence-transformers==3.2.1
 clip==0.2.0
-streamlit==1.20.0
+streamlit
 python-dotenv==1.0.0
 PyPDF2==3.0.1
 Pillow==9.5.0
